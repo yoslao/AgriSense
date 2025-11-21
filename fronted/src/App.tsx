@@ -4,9 +4,10 @@ import { LoginScreen } from './components/LoginScreen'
 import { FarmerHome } from './components/FarmerHome'
 import { ConsumerHome } from './components/ConsumerHome'
 import { CartAndTracking } from './components/CartAndTracking'
+import { AdminHome } from './components/AdminHome'
 
-export type UserType = 'farmer' | 'consumer' | null
-export type Screen = 'welcome' | 'login' | 'farmer-home' | 'consumer-home' | 'cart'
+export type UserType = 'farmer' | 'consumer' | 'admin' | null
+export type Screen = 'welcome' | 'login' | 'farmer-home' | 'consumer-home' | 'cart' | 'admin-home'
 
 export interface Product {
   id: string
@@ -101,6 +102,8 @@ export default function App() {
       setCurrentScreen('farmer-home')
     } else if (userType === 'consumer') {
       setCurrentScreen('consumer-home')
+    } else if (userType === 'admin') {
+      setCurrentScreen('admin-home')
     }
   }
 
@@ -142,6 +145,13 @@ export default function App() {
           onUpdateQuantity={updateCartQuantity}
           onRemoveItem={removeFromCart}
           onCreateOrder={createOrder}
+        />
+      )}
+
+      {currentScreen === 'admin-home' && (
+        <AdminHome 
+          onNavigate={navigateToScreen}
+          orders={orders}
         />
       )}
     </div>

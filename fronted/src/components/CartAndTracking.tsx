@@ -13,7 +13,16 @@ import { Separator } from "./ui/separator";
 import { Alert, AlertDescription } from "./ui/alert";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Label } from "./ui/label";
+import { Input } from "./ui/input";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog";
+import { QRCodeSVG } from "qrcode.react";
 import {
   ArrowLeft,
   ShoppingCart,
@@ -26,6 +35,7 @@ import {
   CheckCircle,
   Truck,
   Package,
+  Smartphone,
 } from "lucide-react";
 
 interface CartAndTrackingProps {
@@ -56,6 +66,13 @@ export function CartAndTracking({
   );
   const [paymentMethod, setPaymentMethod] = useState("yape");
   const [showCheckout, setShowCheckout] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+
+  // Estados para formulario de tarjeta
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardName, setCardName] = useState("");
+  const [cardExpiry, setCardExpiry] = useState("");
+  const [cardCvv, setCardCvv] = useState("");
 
   const subtotal = cart.reduce(
     (sum, item) => sum + item.price * item.cartQuantity,
@@ -66,10 +83,51 @@ export function CartAndTracking({
 
   const handleCheckout = () => {
     if (cart.length > 0) {
+      //const newOrder = onCreateOrder(cart, paymentMethod);
+      //setShowCheckout(false);
+      //setActiveTab("orders");
+      setShowPaymentModal(true);
+    }
+  };
+
+  const handleConfirmPayment = () => {
+    if (cart.length > 0) {
       const newOrder = onCreateOrder(cart, paymentMethod);
+      setShowPaymentModal(false);
       setShowCheckout(false);
       setActiveTab("orders");
+      // Resetear formulario de tarjeta
+      setCardNumber("");
+      setCardName("");
+      setCardExpiry("");
+      setCardCvv("");
     }
+  };
+
+  const formatCardNumber = (value: string) => {
+    const cleaned = value.replace(/\s/g, "");
+    const formatted = cleaned.match(/.{1,4}/g)?.join(" ") || cleaned;
+    return formatted.slice(0, 19); // 16 dígitos + 3 espacios
+  };
+
+  const formatExpiry = (value: string) => {
+    const cleaned = value.replace(/\D/g, "");
+    if (cleaned.length >= 2) {
+      return cleaned.slice(0, 2) + "/" + cleaned.slice(2, 4);
+    }
+    return cleaned;
+  };
+
+  // Generar datos para el QR
+  const generateQRData = () => {
+    const orderData = {
+      amount: total.toFixed(2),
+      currency: "PEN",
+      method: paymentMethod === "yape" ? "Yape" : "Plin",
+      reference: `AGRISENSE-${Date.now()}`,
+      merchant: "AgriSense",
+    };
+    return JSON.stringify(orderData);
   };
 
   const getOrderStatusInfo = (status: Order["status"]) => {
@@ -350,6 +408,7 @@ export function CartAndTracking({
                           <RadioGroupItem
                             value="yape"
                             id="yape"
+                            className="text-black data-[state=checked]:bg-black data-[state=checked]:border-black"
                           />
                           <Label
                             htmlFor="yape"
@@ -368,6 +427,7 @@ export function CartAndTracking({
                           <RadioGroupItem
                             value="plin"
                             id="plin"
+                            className="text-black data-[state=checked]:bg-black data-[state=checked]:border-black"
                           />
                           <Label
                             htmlFor="plin"
@@ -386,6 +446,7 @@ export function CartAndTracking({
                           <RadioGroupItem
                             value="card"
                             id="card"
+                            className="text-black data-[state=checked]:bg-black data-[state=checked]:border-black"
                           />
                           <Label
                             htmlFor="card"
@@ -587,6 +648,154 @@ export function CartAndTracking({
           </div>
         )}
       </div>
+
+      {/* Modal de pago */}
+      <Dialog open={showPaymentModal} onOpenChange={setShowPaymentModal}>
+        <DialogContent className="bg-white dark:bg-neutral-900 rounded-xl shadow-lg">
+          <DialogHeader>
+            <DialogTitle>
+              {paymentMethod === "yape" ? "Pagar con Yape" :
+               paymentMethod === "plin" ? "Pagar con Plin" :
+               "Pagar con Tarjeta"}
+            </DialogTitle>
+            <DialogDescription>
+              {paymentMethod === "yape" || paymentMethod === "plin" 
+                ? "Escanea el código QR con tu aplicación"
+                : "Ingresa los datos de tu tarjeta para completar el pago"}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            {/* QR para Yape/Plin */}
+            {(paymentMethod === "yape" || paymentMethod === "plin") && (
+              <div className="flex flex-col items-center space-y-4 py-4">
+                <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
+                  <QRCodeSVG
+                    value={generateQRData()}
+                    size={200}
+                    level="H"
+                    includeMargin={true}
+                  />
+                </div>
+                
+                <div className="text-center space-y-2">
+                  <div className="flex items-center justify-center space-x-2">
+                    <Smartphone className={`h-5 w-5 ${
+                      paymentMethod === "yape" ? "text-purple-600" : "text-blue-600"
+                    }`} />
+                    <p className="font-medium">
+                      Escanea con {paymentMethod === "yape" ? "Yape" : "Plin"}
+                    </p>
+                  </div>
+                  
+                  <div className="bg-gray-50 p-3 rounded-lg">
+                    <p className="text-sm text-gray-600">Monto a pagar</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      S/ {total.toFixed(2)}
+                    </p>
+                  </div>
+
+                  <Alert>
+                    <AlertDescription className="text-xs">
+                      Abre tu app de {paymentMethod === "yape" ? "Yape" : "Plin"}, 
+                      selecciona "Pagar con QR" y escanea este código
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              </div>
+            )}
+
+            {/* Formulario de tarjeta */}
+            {paymentMethod === "card" && (
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="card-number">Número de tarjeta</Label>
+                  <div className="relative">
+                    <Input
+                      id="card-number"
+                      type="text"
+                      placeholder="1234 5678 9012 3456"
+                      value={cardNumber}
+                      onChange={(e) =>
+                        setCardNumber(formatCardNumber(e.target.value))
+                      }
+                      maxLength={19}
+                      className="pl-10"
+                    />
+                    <CreditCard className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="card-name">Nombre del titular</Label>
+                  <Input
+                    id="card-name"
+                    type="text"
+                    placeholder="JUAN PEREZ"
+                    value={cardName}
+                    onChange={(e) => setCardName(e.target.value.toUpperCase())}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="card-expiry">Fecha de vencimiento</Label>
+                    <Input
+                      id="card-expiry"
+                      type="text"
+                      placeholder="MM/AA"
+                      value={cardExpiry}
+                      onChange={(e) => setCardExpiry(formatExpiry(e.target.value))}
+                      maxLength={5}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="card-cvv">CVV</Label>
+                    <Input
+                      id="card-cvv"
+                      type="text"
+                      placeholder="123"
+                      value={cardCvv}
+                      onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                      maxLength={4}
+                    />
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Total a pagar</span>
+                    <span className="text-xl font-bold">S/ {total.toFixed(2)}</span>
+                  </div>
+                </div>
+
+                <Alert>
+                  <AlertDescription className="text-xs">
+                    <CreditCard className="h-3 w-3 inline mr-1" />
+                    Tu información está protegida y encriptada
+                  </AlertDescription>
+                </Alert>
+              </div>
+            )}
+          </div>
+
+          <div className="flex space-x-3 mt-6">
+            <Button
+              onClick={handleConfirmPayment}
+              className="flex-1 bg-green-600 hover:bg-green-700"
+            >
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Confirmar pago
+            </Button>
+            <Button
+              onClick={() => setShowPaymentModal(false)}
+              variant="outline"
+            >
+              Cancelar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

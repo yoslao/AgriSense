@@ -1,7 +1,7 @@
 import { UserType } from '../App'
 import { Button } from './ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
-import { Sprout, ShoppingCart } from 'lucide-react'
+import { Sprout, ShoppingCart, Shield } from 'lucide-react'
 
 interface WelcomeScreenProps {
   onSelectUserType: (type: UserType) => void
@@ -55,6 +55,20 @@ export function WelcomeScreen({ onSelectUserType }: WelcomeScreenProps) {
                 <div className="text-left">
                   <div className="font-medium">Soy Consumidor</div>
                   <div className="text-sm opacity-90">Compra productos frescos y locales</div>
+                </div>
+              </div>
+            </Button>
+
+            <Button
+              onClick={() => onSelectUserType('admin')}
+              className="w-full h-16 bg-purple-600 hover:bg-purple-700 text-white"
+              size="lg"
+            >
+              <div className="flex items-center space-x-3">
+                <Shield className="h-6 w-6" />
+                <div className="text-left">
+                  <div className="font-medium">Soy Administrador</div>
+                  <div className="text-sm opacity-90">Gestiona y administra la plataforma</div>
                 </div>
               </div>
             </Button>
